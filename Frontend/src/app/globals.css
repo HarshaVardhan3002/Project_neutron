@@ -1,0 +1,264 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 0 72% 51%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 45 95% 51%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 0 72% 51%;
+    --radius: 1rem;
+    
+    /* Chart Colors */
+    --chart-1: 347 77% 50%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 45 95% 51%;
+    --chart-4: 217 91% 60%;
+    --chart-5: 122 71% 45%;
+
+    /* Custom Cursor - Light Mode */
+    --cursor-default: url("data:image/svg+xml,%3csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='16' cy='16' r='10' stroke='%2309090b' stroke-width='2'/%3e%3ccircle cx='16' cy='16' r='2' fill='%2309090b'/%3e%3c/svg%3e");
+    --cursor-pointer: url("data:image/svg+xml,%3csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='16' cy='16' r='10' stroke='%2309090b' stroke-width='2'/%3e%3ccircle cx='16' cy='16' r='5' fill='%2309090b'/%3e%3c/svg%3e");
+  }
+ 
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 72% 51%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 45 95% 55%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive: 0 63% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 0 72% 51%;
+
+    /* Custom Cursor - Dark Mode */
+    --cursor-default: url("data:image/svg+xml,%3csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='16' cy='16' r='10' stroke='%23fafafa' stroke-width='2'/%3e%3ccircle cx='16' cy='16' r='2' fill='%23fafafa'/%3e%3c/svg%3e");
+    --cursor-pointer: url("data:image/svg+xml,%3csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='16' cy='16' r='10' stroke='%23fafafa' stroke-width='2'/%3e%3ccircle cx='16' cy='16' r='5' fill='%23fafafa'/%3e%3c/svg%3e");
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply scroll-smooth;
+    /* Apply custom cursor globally */
+    cursor: var(--cursor-default) 16 16, auto;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Apply pointer cursor to interactive elements */
+  a, button, [role="button"], input[type="submit"], input[type="button"], label, .cursor-pointer {
+    cursor: var(--cursor-pointer) 16 16, pointer !important;
+  }
+}
+
+@layer utilities {
+  /*
+   * Animation for creating a moving gradient effect on text.
+   */
+  @keyframes animated-gradient {
+    to {
+      background-position: 200% center;
+    }
+  }
+
+  /*
+   * Animation for a subtle, shifting text glow effect that complements the gradient.
+   */
+  @keyframes animated-glow {
+    0% {
+      text-shadow: 0 0 0.3rem hsl(var(--accent) / 0.5); /* Yellow */
+    }
+    25% {
+      text-shadow: 0 0 0.7rem hsl(var(--primary) / 0.6); /* Red */
+    }
+    50% {
+      text-shadow: 0 0 0.3rem hsl(var(--chart-5) / 0.5); /* Green */
+    }
+    75% {
+      text-shadow: 0 0 0.7rem hsl(var(--chart-4) / 0.6); /* Blue */
+    }
+    100% {
+      text-shadow: 0 0 0.3rem hsl(var(--accent) / 0.5); /* Yellow */
+    }
+  }
+
+  /* Utility class to apply the animated gradient and glow */
+  .animated-gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      to right,
+      hsl(var(--accent)),      /* Yellow */
+      hsl(var(--primary)),     /* Red */
+      hsl(var(--chart-5)),     /* Green */
+      hsl(var(--chart-4)),     /* Blue */
+      hsl(var(--accent))       /* Yellow */
+    );
+    background-size: 200% auto;
+    animation: animated-gradient 4s linear infinite, animated-glow 4s linear infinite;
+  }
+  
+  /* A hover-specific version of the animated gradient text */
+  .hover\:animated-gradient-text:hover {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      to right,
+      hsl(var(--accent)),      /* Yellow */
+      hsl(var(--primary)),     /* Red */
+      hsl(var(--chart-5)),     /* Green */
+      hsl(var(--chart-4)),     /* Blue */
+      hsl(var(--accent))       /* Yellow */
+    );
+    background-size: 200% auto;
+    animation: animated-gradient 2s linear infinite;
+  }
+
+  /*
+   * Glow animations for social media icons.
+   * Each uses a distinct color associated with the brand.
+   */
+  @keyframes slow-green-blink {
+    0%, 100% {
+      filter: drop-shadow(0 0 0.4rem hsl(var(--chart-2) / 0.7));
+      color: hsl(var(--chart-2));
+    }
+    50% {
+      filter: drop-shadow(0 0 0.8rem hsl(var(--chart-2) / 0.9));
+      color: hsl(var(--chart-2) / 0.9);
+    }
+  }
+
+  .animate-slow-green-blink {
+    animation: slow-green-blink 2.5s ease-in-out infinite;
+  }
+
+  @keyframes slow-instagram-blink {
+    0%, 100% {
+      filter: drop-shadow(0 0 0.4rem #d6249fBF);
+      color: #d6249f;
+    }
+    50% {
+      filter: drop-shadow(0 0 0.8rem #d6249fE6);
+      color: #d6249f;
+    }
+  }
+  
+  .animate-instagram-glow {
+    animation: slow-instagram-blink 2.5s ease-in-out infinite;
+  }
+
+  @keyframes slow-facebook-blink {
+    0%, 100% {
+      filter: drop-shadow(0 0 0.4rem hsl(var(--chart-4) / 0.7));
+      color: hsl(var(--chart-4));
+    }
+    50% {
+      filter: drop-shadow(0 0 0.8rem hsl(var(--chart-4) / 0.9));
+      color: hsl(var(--chart-4));
+    }
+  }
+
+  .animate-facebook-glow {
+    animation: slow-facebook-blink 2.5s ease-in-out infinite;
+  }
+
+  @keyframes slow-twitter-blink {
+     0%, 100% {
+      filter: drop-shadow(0 0 0.4rem #1DA1F2BF);
+      color: #1DA1F2;
+    }
+    50% {
+      filter: drop-shadow(0 0 0.8rem #1DA1F2E6);
+      color: #1DA1F2;
+    }
+  }
+  
+  .animate-twitter-glow {
+    animation: slow-twitter-blink 2.5s ease-in-out infinite;
+  }
+
+  @keyframes slow-dark-green-blink {
+    0%, 100% {
+      filter: drop-shadow(0 0 0.4rem hsl(var(--chart-5) / 0.7));
+      color: hsl(var(--chart-5));
+    }
+    50% {
+      filter: drop-shadow(0 0 0.8rem hsl(var(--chart-5) / 0.9));
+      color: hsl(var(--chart-5));
+    }
+  }
+
+  .animate-call-glow {
+    animation: slow-dark-green-blink 2.5s ease-in-out infinite;
+  }
+
+  /* Animated Gradient Border for Cards */
+  @keyframes animated-border-glow {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animated-border-card {
+    position: relative;
+  }
+
+  .animated-border-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(60deg, hsl(var(--chart-4)), hsl(var(--accent)), hsl(var(--primary)), hsl(var(--chart-2)));
+    background-size: 300% 300%;
+    animation: animated-border-glow 4s linear infinite;
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .animated-border-card:hover::before {
+    opacity: 1;
+  }
+}

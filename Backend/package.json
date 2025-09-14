@@ -1,0 +1,47 @@
+{
+  "name": "project-neutron-backend",
+  "version": "1.0.0",
+  "description": "Project_Neutron LMS Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:pull": "prisma db pull",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "test": "echo \"Backend tests not implemented yet\" && exit 0",
+    "test:health": "curl http://localhost:3001/api/health || echo \"Server not running\"",
+    "test:connection": "node -e \"fetch('http://localhost:3001/api/health/ping').then(r=>r.json()).then(console.log).catch(e=>console.error('Connection failed:', e.message))\""
+  },
+  "keywords": [
+    "lms",
+    "education",
+    "learning",
+    "api"
+  ],
+  "author": "Project_Neutron Team",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@prisma/client": "^6.16.1",
+    "@supabase/supabase-js": "^2.39.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.16.3",
+    "prisma": "^6.16.1",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
