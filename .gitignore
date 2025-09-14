@@ -113,9 +113,14 @@ Thumbs.db
 *.sqlite
 *.db
 
-# Test files
-test-*.js
+# Temporary test files (but not route files)
+test-connection.js
+test-api.js
+test-supabase*.js
+test-auth*.js
+test-env.js
 *-test.js
+*.test.js
 
 # Documentation passwords (keep structure but not actual passwords)
 docs/Superbase_Database_password.txt
