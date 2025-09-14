@@ -20,7 +20,10 @@ const profileRoutes = require('./routes/profile.routes');
 const adminRoutes = require('./routes/admin.routes');
 const themesRoutes = require('./routes/themes.routes');
 const websiteContentRoutes = require('./routes/website-content.routes');
-const testBuilderRoutes = require('./routes/test-builder.routes');
+// HACK: Temporarily commented out to prevent server crash.
+// The file './routes/test-builder.routes.js' is missing, likely due to a faulty refactor.
+// TODO: This feature needs to be properly refactored and reintegrated. See audit report.
+// const testBuilderRoutes = require('./routes/test-builder.routes');
 const courseBuilderRoutes = require('./routes/course-builder.routes');
 const userManagementRoutes = require('./routes/user-management.routes');
 const aiRoutes = require('./routes/ai.routes');
@@ -72,7 +75,10 @@ app.use('/api/profile', authenticateToken, profileRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/themes', themesRoutes);
 app.use('/api/website-content', websiteContentRoutes);
-app.use('/api/test-builder', testBuilderRoutes);
+// HACK: Temporarily commented out to prevent server crash.
+// The file './routes/test-builder.routes.js' is missing, likely due to a faulty refactor.
+// TODO: This feature needs to be properly refactored and reintegrated. See audit report.
+// app.use('/api/test-builder', testBuilderRoutes);
 app.use('/api/course-builder', courseBuilderRoutes);
 app.use('/api/user-management', userManagementRoutes);
 app.use('/api/ai', aiRoutes);
