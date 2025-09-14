@@ -732,6 +732,10 @@ class ApiClient {
     return this.request(`/website-content/section/${section}/history${queryString}`);
   }
 
+  async getWebsiteSection(section: string) {
+    return this.request(`/website-content/section/${section}`);
+  }
+
   // Test Builder endpoints
   async getTestsForBuilder(params?: any) {
     const queryString = params ? new URLSearchParams(params).toString() : '';

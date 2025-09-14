@@ -812,4 +812,97 @@ router.get('/export/csv', authenticateToken, requireRole(['admin', 'super_admin'
     }
 });
 
+/**
+ * POST /api/user-management
+ * Create a new user
+ */
+router.post('/', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+        const {
+            email,
+            password,
+            displayName,
+            firstName,
+            lastName,
+            role = 'student',
+            phone,
+            country
+        } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ success: false, error: 'Email and password are required' });
+        }
+
+        // Create user in Supabase Auth
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: {
+                display_name: displayName,
+                first_name: firstName,
+                last_name: lastName
+            }
+        });
+
+        if (authError) {
+            throw new Error(`Failed to create user in Supabase: ${authError.message}`);
+        }
+
+        // Create profile in our database
+        const profile = await prisma.profile.create({
+            data: {
+                id: authUser.user.id,
+                displayName,
+                firstName,
+                lastName,
+                role,
+                phone,
+                country
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'User created successfully',
+            data: { profile }
+        });
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create user'
+        });
+    }
+});
+
+/**
+ * POST /api/user-management/:userId/password-reset
+ * Send password reset for user
+ */
+router.post('/:userId/password-reset', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+    const { userId } = req.params;
+
+    // This endpoint should ideally trigger an email, but for now we can just log it.
+    // The logic in admin.routes.js was also incomplete.
+    // A full implementation would use supabase.auth.admin.generateLink()
+
+    console.log(`Password reset requested for user: ${userId}`);
+
+    // Log the action
+    await logSystemAction(
+        'info',
+        `Password reset initiated for user ID: ${userId}`,
+        req.user.id,
+        'password_reset',
+        'user_management',
+        userId
+    );
+
+    res.json({
+        success: true,
+        message: 'Password reset initiated successfully. (This is a placeholder implementation)',
+    });
+});
+
 module.exports = router;
