@@ -1,5 +1,6 @@
 /**
- * Admin Routes for Project_Neutron LMS
+ * Admin Content Management Routes for Project_Neutron LMS
+ * Handles courses, modules, lessons, tests, and questions
  */
 
 const express = require('express');
@@ -12,495 +13,579 @@ const router = express.Router();
 // Apply admin middleware to all routes
 router.use(requireAdmin);
 
-/**
- * GET /api/admin/dashboard
- * Get admin dashboard statistics
- */
-router.get('/dashboard', asyncHandler(async (req, res) => {
-    const [
-        totalUsers,
-        totalCourses,
-        totalEnrollments,
-        totalTests,
-        recentUsers,
-        recentEnrollments,
-        courseStats,
-        testStats
-    ] = await Promise.all([
-        // Total counts
-        prisma.profile.count(),
-        prisma.course.count(),
-        prisma.enrollment.count(),
-        prisma.test.count(),
 
-        // Recent activity
-        prisma.profile.findMany({
-            orderBy: { createdAt: 'desc' },
-            take: 5,
-            select: {
-                id: true,
-                email: true,
-                displayName: true,
-                role: true,
-                createdAt: true
+/**
+ * POST /api/admin/tests
+ * Create a new test
+ */
+router.post('/tests', asyncHandler(async (req, res) => {
+    const {
+        courseId,
+        moduleId,
+        title,
+        kind,
+        timeLimitSeconds,
+        passingScore = 60,
+        allowedAttempts,
+        randomized = false,
+        questions = []
+    } = req.body;
+
+    if (!title || !kind) {
+        throw new AppError('Test title and kind are required', 400);
+    }
+
+    const test = await prisma.test.create({
+        data: {
+            courseId,
+            moduleId,
+            title,
+            kind,
+            timeLimitSeconds,
+            passingScore,
+            allowedAttempts,
+            randomized,
+            createdBy: req.user.id
+        }
+    });
+
+    // Create questions if provided
+    if (questions.length > 0) {
+        for (let i = 0; i < questions.length; i++) {
+            const questionData = questions[i];
+            const { options, ...questionInfo } = questionData;
+
+            const question = await prisma.question.create({
+                data: {
+                    ...questionInfo,
+                    testId: test.id,
+                    orderIndex: i,
+                    createdBy: req.user.id
+                }
+            });
+
+            // Create options if provided
+            if (options && options.length > 0) {
+                for (let j = 0; j < options.length; j++) {
+                    await prisma.questionOption.create({
+                        data: {
+                            ...options[j],
+                            questionId: question.id,
+                            orderIndex: j
+                        }
+                    });
+                }
             }
-        }),
-        prisma.enrollment.findMany({
-            orderBy: { startedAt: 'desc' },
-            take: 5,
-            include: {
-                user: {
-                    select: {
-                        displayName: true,
-                        email: true
+        }
+    }
+
+    const testWithQuestions = await prisma.test.findUnique({
+        where: { id: test.id },
+        include: {
+            questions: {
+                include: {
+                    options: true
+                },
+                orderBy: { orderIndex: 'asc' }
+            }
+        }
+    });
+
+    res.status(201).json({
+        message: 'Test created successfully',
+        test: testWithQuestions
+    });
+}));
+
+/**
+ * PUT /api/admin/tests/:id
+ * Update test
+ */
+router.put('/tests/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const test = await prisma.test.update({
+        where: { id },
+        data: {
+            ...updateData,
+            updatedAt: new Date()
+        }
+    });
+
+    res.json({
+        message: 'Test updated successfully',
+        test
+    });
+}));
+
+/**
+ * DELETE /api/admin/tests/:id
+ * Delete test
+ */
+router.delete('/tests/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    await prisma.test.delete({
+        where: { id }
+    });
+
+    res.json({ message: 'Test deleted successfully' });
+}));
+
+/**
+ * GET /api/admin/tests/:id
+ * Get test with questions and options
+ */
+router.get('/tests/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const test = await prisma.test.findUnique({
+        where: { id },
+        include: {
+            course: {
+                select: {
+                    title: true
+                }
+            },
+            module: {
+                select: {
+                    title: true
+                }
+            },
+            questions: {
+                include: {
+                    options: {
+                        orderBy: { orderIndex: 'asc' }
                     }
                 },
+                orderBy: { orderIndex: 'asc' }
+            },
+            _count: {
+                select: {
+                    testAttempts: true
+                }
+            }
+        }
+    });
+
+    if (!test) {
+        throw new AppError('Test not found', 404);
+    }
+
+    res.json({ test });
+}));
+
+/**
+ * POST /api/admin/tests/:testId/questions
+ * Add question to test
+ */
+router.post('/tests/:testId/questions', asyncHandler(async (req, res) => {
+    const { testId } = req.params;
+    const { stem, kind, points = 1, orderIndex, options = [] } = req.body;
+
+    if (!stem || !kind) {
+        throw new AppError('Question stem and kind are required', 400);
+    }
+
+    const question = await prisma.question.create({
+        data: {
+            testId,
+            stem,
+            kind,
+            points,
+            orderIndex,
+            createdBy: req.user.id
+        }
+    });
+
+    // Create options if provided
+    if (options.length > 0) {
+        for (let i = 0; i < options.length; i++) {
+            await prisma.questionOption.create({
+                data: {
+                    ...options[i],
+                    questionId: question.id,
+                    orderIndex: i
+                }
+            });
+        }
+    }
+
+    const questionWithOptions = await prisma.question.findUnique({
+        where: { id: question.id },
+        include: {
+            options: {
+                orderBy: { orderIndex: 'asc' }
+            }
+        }
+    });
+
+    res.status(201).json({
+        message: 'Question created successfully',
+        question: questionWithOptions
+    });
+}));
+
+/**
+ * PUT /api/admin/questions/:id
+ * Update question
+ */
+router.put('/questions/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { stem, kind, points, orderIndex, options } = req.body;
+
+    const question = await prisma.question.update({
+        where: { id },
+        data: {
+            stem,
+            kind,
+            points,
+            orderIndex,
+            updatedAt: new Date()
+        }
+    });
+
+    // Update options if provided
+    if (options) {
+        // Delete existing options
+        await prisma.questionOption.deleteMany({
+            where: { questionId: id }
+        });
+
+        // Create new options
+        for (let i = 0; i < options.length; i++) {
+            await prisma.questionOption.create({
+                data: {
+                    ...options[i],
+                    questionId: id,
+                    orderIndex: i
+                }
+            });
+        }
+    }
+
+    const questionWithOptions = await prisma.question.findUnique({
+        where: { id },
+        include: {
+            options: {
+                orderBy: { orderIndex: 'asc' }
+            }
+        }
+    });
+
+    res.json({
+        message: 'Question updated successfully',
+        question: questionWithOptions
+    });
+}));
+
+/**
+ * DELETE /api/admin/questions/:id
+ * Delete question
+ */
+router.delete('/questions/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    await prisma.question.delete({
+        where: { id }
+    });
+
+    res.json({ message: 'Question deleted successfully' });
+}));
+
+/**
+ * GET /api/admin/content-overview
+ * Get overview of all content for management
+ */
+router.get('/content-overview', asyncHandler(async (req, res) => {
+    const [courses, tests, totalUsers, totalEnrollments] = await Promise.all([
+        prisma.course.findMany({
+            include: {
+                _count: {
+                    select: {
+                        modules: true,
+                        enrollments: true,
+                        tests: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        }),
+        prisma.test.findMany({
+            include: {
                 course: {
                     select: {
                         title: true
                     }
+                },
+                module: {
+                    select: {
+                        title: true
+                    }
+                },
+                _count: {
+                    select: {
+                        questions: true,
+                        testAttempts: true
+                    }
                 }
-            }
+            },
+            orderBy: { createdAt: 'desc' }
         }),
-
-        // Course statistics
-        prisma.course.groupBy({
-            by: ['published'],
-            _count: true
-        }),
-
-        // Test statistics
-        prisma.testAttempt.groupBy({
-            by: ['status'],
-            _count: true
-        })
+        prisma.profile.count(),
+        prisma.enrollment.count()
     ]);
 
     res.json({
         overview: {
+            totalCourses: courses.length,
+            totalTests: tests.length,
             totalUsers,
-            totalCourses,
-            totalEnrollments,
-            totalTests
+            totalEnrollments
         },
-        recentActivity: {
-            users: recentUsers,
-            enrollments: recentEnrollments
-        },
-        statistics: {
-            courses: courseStats,
-            tests: testStats
-        }
+        courses,
+        tests
     });
 }));
 
 /**
- * GET /api/admin/users
- * Get all users with pagination and filtering
+ * GET /api/admin/content/chapters
+ * Get all chapters/modules for management
  */
-router.get('/users', asyncHandler(async (req, res) => {
-    const {
-        page = 1,
-        limit = 20,
-        search,
-        role,
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
-    } = req.query;
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const where = {
-        ...(search && {
-            OR: [
-                { email: { contains: search, mode: 'insensitive' } },
-                { displayName: { contains: search, mode: 'insensitive' } }
-            ]
-        }),
-        ...(role && { role })
-    };
-
-    const [users, total] = await Promise.all([
-        prisma.profile.findMany({
-            where,
-            skip,
-            take: parseInt(limit),
-            orderBy: { [sortBy]: sortOrder },
-            select: {
-                id: true,
-                email: true,
-                displayName: true,
-                phone: true,
-                role: true,
-                isEmailVerified: true,
-                createdAt: true,
-                updatedAt: true,
-                _count: {
-                    select: {
-                        enrollments: true,
-                        testAttempts: true
-                    }
+router.get('/chapters', asyncHandler(async (req, res) => {
+    const chapters = await prisma.module.findMany({
+        include: {
+            course: {
+                select: { title: true }
+            },
+            lessons: {
+                orderBy: { orderIndex: 'asc' }
+            },
+            _count: {
+                select: {
+                    lessons: true
                 }
             }
-        }),
-        prisma.profile.count({ where })
-    ]);
+        },
+        orderBy: [{ courseId: 'asc' }, { orderIndex: 'asc' }]
+    });
+
+    // Transform to match frontend expectations
+    const transformedChapters = chapters.map(chapter => ({
+        id: chapter.id,
+        title: chapter.title,
+        description: chapter.description,
+        order: chapter.orderIndex,
+        isPublished: true, // Assuming published by default
+        courseId: chapter.courseId,
+        createdAt: chapter.createdAt,
+        course: chapter.course,
+        contents: chapter.lessons.map(lesson => ({
+            id: lesson.id,
+            type: lesson.kind,
+            title: lesson.title,
+            content: lesson.description,
+            url: lesson.contentS3Key,
+            order: lesson.orderIndex
+        })),
+        _count: {
+            contents: chapter._count.lessons
+        }
+    }));
 
     res.json({
-        users,
-        pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total,
-            pages: Math.ceil(total / parseInt(limit))
-        }
+        success: true,
+        data: { chapters: transformedChapters }
     });
 }));
 
 /**
- * GET /api/admin/users/:id
- * Get detailed user information
+ * POST /api/admin/content/chapters
+ * Create a new chapter
  */
-router.get('/users/:id', asyncHandler(async (req, res) => {
-    const { id } = req.params;
+router.post('/chapters', asyncHandler(async (req, res) => {
+    const { title, description, courseId, isPublished } = req.body;
 
-    const user = await prisma.profile.findUnique({
-        where: { id },
-        include: {
-            enrollments: {
-                include: {
-                    course: {
-                        select: {
-                            title: true,
-                            thumbnailS3Key: true
-                        }
-                    }
-                },
-                orderBy: { startedAt: 'desc' }
-            },
-            testAttempts: {
-                include: {
-                    test: {
-                        select: {
-                            title: true,
-                            course: {
-                                select: {
-                                    title: true
-                                }
-                            }
-                        }
-                    }
-                },
-                orderBy: { startedAt: 'desc' },
-                take: 10
-            },
-            notifications: {
-                orderBy: { createdAt: 'desc' },
-                take: 5
-            }
+    // Get the next order number for this course
+    const lastModule = await prisma.module.findFirst({
+        where: { courseId },
+        orderBy: { orderIndex: 'desc' }
+    });
+
+    const orderIndex = lastModule ? lastModule.orderIndex + 1 : 0;
+
+    const chapter = await prisma.module.create({
+        data: {
+            title,
+            description,
+            courseId,
+            orderIndex,
+            // Note: isPublished is not in the schema, so we'll ignore it for now
         }
     });
 
-    if (!user) {
-        throw new AppError('User not found', 404);
-    }
-
-    res.json({ user });
+    res.json({
+        success: true,
+        data: { chapter }
+    });
 }));
 
 /**
- * PUT /api/admin/users/:id
- * Update user information
+ * PUT /api/admin/content/chapters/:id
+ * Update chapter
  */
-router.put('/users/:id', asyncHandler(async (req, res) => {
+router.put('/chapters/:id', asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { role, isEmailVerified, displayName, phone } = req.body;
+    const { title, description, courseId, isPublished } = req.body;
 
-    const user = await prisma.profile.update({
+    const chapter = await prisma.module.update({
         where: { id },
         data: {
-            role,
-            isEmailVerified,
-            displayName,
-            phone,
+            title,
+            description,
+            courseId,
             updatedAt: new Date()
-        },
-        select: {
-            id: true,
-            email: true,
-            displayName: true,
-            phone: true,
-            role: true,
-            isEmailVerified: true,
-            updatedAt: true
         }
     });
 
     res.json({
-        message: 'User updated successfully',
-        user
+        success: true,
+        data: { chapter }
     });
 }));
 
 /**
- * DELETE /api/admin/users/:id
- * Soft delete user
+ * DELETE /api/admin/content/chapters/:id
+ * Delete chapter
  */
-router.delete('/users/:id', asyncHandler(async (req, res) => {
+router.delete('/chapters/:id', asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    await prisma.profile.update({
-        where: { id },
+    await prisma.module.delete({
+        where: { id }
+    });
+
+    res.json({
+        success: true,
+        message: 'Chapter deleted successfully'
+    });
+}));
+
+/**
+ * PUT /api/admin/content/chapters/:id/reorder
+ * Reorder chapter
+ */
+router.put('/chapters/:id/reorder', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { direction } = req.body;
+
+    const chapter = await prisma.module.findUnique({
+        where: { id }
+    });
+
+    if (!chapter) {
+        throw new AppError('Chapter not found', 404);
+    }
+
+    const newOrder = direction === 'up' ? chapter.orderIndex - 1 : chapter.orderIndex + 1;
+
+    // Find the chapter to swap with
+    const swapChapter = await prisma.module.findFirst({
+        where: {
+            courseId: chapter.courseId,
+            orderIndex: newOrder
+        }
+    });
+
+    if (swapChapter) {
+        // Swap orders using a transaction
+        await prisma.$transaction([
+            prisma.module.update({
+                where: { id: chapter.id },
+                data: { orderIndex: newOrder }
+            }),
+            prisma.module.update({
+                where: { id: swapChapter.id },
+                data: { orderIndex: chapter.orderIndex }
+            })
+        ]);
+    }
+
+    res.json({
+        success: true,
+        message: 'Chapter reordered successfully'
+    });
+}));
+
+/**
+ * POST /api/admin/content/chapters/:chapterId/contents
+ * Add content to chapter
+ */
+router.post('/chapters/:chapterId/contents', asyncHandler(async (req, res) => {
+    const { chapterId } = req.params;
+    const { type, title, content, url, order } = req.body;
+
+    const newContent = await prisma.lesson.create({
+        data: {
+            moduleId: chapterId,
+            title,
+            kind: type,
+            description: content,
+            contentS3Key: url,
+            orderIndex: order || 0
+        }
+    });
+
+    res.json({
+        success: true,
+        data: { content: newContent }
+    });
+}));
+
+/**
+ * PUT /api/admin/content/chapters/:chapterId/contents/:contentId
+ * Update content
+ */
+router.put('/chapters/:chapterId/contents/:contentId', asyncHandler(async (req, res) => {
+    const { contentId } = req.params;
+    const { type, title, content, url, order } = req.body;
+
+    const updatedContent = await prisma.lesson.update({
+        where: { id: contentId },
+        data: {
+            title,
+            kind: type,
+            description: content,
+            contentS3Key: url,
+            orderIndex: order
+        }
+    });
+
+    res.json({
+        success: true,
+        data: { content: updatedContent }
+    });
+}));
+
+/**
+ * DELETE /api/admin/content/chapters/:chapterId/contents/:contentId
+ * Delete content
+ */
+router.delete('/chapters/:chapterId/contents/:contentId', asyncHandler(async (req, res) => {
+    const { contentId } = req.params;
+
+    await prisma.lesson.update({
+        where: { id: contentId },
         data: {
             deletedAt: new Date()
         }
     });
 
-    res.json({ message: 'User deleted successfully' });
-}));
-
-/**
- * GET /api/admin/courses
- * Get all courses for admin management
- */
-router.get('/courses', asyncHandler(async (req, res) => {
-    const {
-        page = 1,
-        limit = 20,
-        search,
-        published,
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
-    } = req.query;
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const where = {
-        ...(search && {
-            OR: [
-                { title: { contains: search, mode: 'insensitive' } },
-                { shortDescription: { contains: search, mode: 'insensitive' } }
-            ]
-        }),
-        ...(published !== undefined && { published: published === 'true' })
-    };
-
-    const [courses, total] = await Promise.all([
-        prisma.course.findMany({
-            where,
-            skip,
-            take: parseInt(limit),
-            orderBy: { [sortBy]: sortOrder },
-            include: {
-                creator: {
-                    select: {
-                        displayName: true,
-                        email: true
-                    }
-                },
-                _count: {
-                    select: {
-                        enrollments: true,
-                        modules: true
-                    }
-                }
-            }
-        }),
-        prisma.course.count({ where })
-    ]);
-
     res.json({
-        courses,
-        pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total,
-            pages: Math.ceil(total / parseInt(limit))
-        }
+        success: true,
+        message: 'Content deleted successfully'
     });
-}));
-
-/**
- * PUT /api/admin/courses/:id/publish
- * Publish/unpublish course
- */
-router.put('/courses/:id/publish', asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { published } = req.body;
-
-    const course = await prisma.course.update({
-        where: { id },
-        data: {
-            published,
-            updatedAt: new Date()
-        },
-        select: {
-            id: true,
-            title: true,
-            published: true
-        }
-    });
-
-    res.json({
-        message: `Course ${published ? 'published' : 'unpublished'} successfully`,
-        course
-    });
-}));
-
-/**
- * GET /api/admin/analytics
- * Get platform analytics
- */
-router.get('/analytics', asyncHandler(async (req, res) => {
-    const { period = '30d' } = req.query;
-
-    let dateFilter;
-    switch (period) {
-        case '7d':
-            dateFilter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            break;
-        case '30d':
-            dateFilter = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            break;
-        case '90d':
-            dateFilter = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-            break;
-        default:
-            dateFilter = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    }
-
-    const [
-        userGrowth,
-        enrollmentTrends,
-        testPerformance,
-        popularCourses,
-        revenueData
-    ] = await Promise.all([
-        // User registration trends
-        prisma.profile.groupBy({
-            by: ['createdAt'],
-            where: {
-                createdAt: { gte: dateFilter }
-            },
-            _count: true
-        }),
-
-        // Enrollment trends
-        prisma.enrollment.groupBy({
-            by: ['startedAt'],
-            where: {
-                startedAt: { gte: dateFilter }
-            },
-            _count: true
-        }),
-
-        // Test performance metrics
-        prisma.testAttempt.aggregate({
-            where: {
-                createdAt: { gte: dateFilter },
-                status: { in: ['submitted', 'graded'] }
-            },
-            _avg: {
-                totalScore: true
-            },
-            _count: true
-        }),
-
-        // Most popular courses
-        prisma.course.findMany({
-            select: {
-                id: true,
-                title: true,
-                _count: {
-                    select: {
-                        enrollments: {
-                            where: {
-                                startedAt: { gte: dateFilter }
-                            }
-                        }
-                    }
-                }
-            },
-            orderBy: {
-                enrollments: {
-                    _count: 'desc'
-                }
-            },
-            take: 10
-        }),
-
-        // Revenue data (if payments are implemented)
-        prisma.payment.aggregate({
-            where: {
-                createdAt: { gte: dateFilter },
-                status: 'completed'
-            },
-            _sum: {
-                amountCents: true
-            },
-            _count: true
-        })
-    ]);
-
-    res.json({
-        period,
-        userGrowth: userGrowth.length,
-        enrollmentTrends: enrollmentTrends.length,
-        testPerformance,
-        popularCourses,
-        revenue: {
-            total: revenueData._sum.amountCents || 0,
-            transactions: revenueData._count
-        }
-    });
-}));
-
-/**
- * GET /api/admin/system-settings
- * Get system settings
- */
-router.get('/system-settings', asyncHandler(async (req, res) => {
-    const settings = await prisma.systemSetting.findMany({
-        orderBy: { key: 'asc' }
-    });
-
-    const settingsObject = settings.reduce((acc, setting) => {
-        acc[setting.key] = setting.value;
-        return acc;
-    }, {});
-
-    res.json({ settings: settingsObject });
-}));
-
-/**
- * PUT /api/admin/system-settings
- * Update system settings
- */
-router.put('/system-settings', asyncHandler(async (req, res) => {
-    const { settings } = req.body;
-
-    if (!settings || typeof settings !== 'object') {
-        throw new AppError('Settings object is required', 400);
-    }
-
-    // Update each setting
-    const updatePromises = Object.entries(settings).map(([key, value]) =>
-        prisma.systemSetting.upsert({
-            where: { key },
-            update: {
-                value,
-                updatedAt: new Date()
-            },
-            create: {
-                key,
-                value
-            }
-        })
-    );
-
-    await Promise.all(updatePromises);
-
-    res.json({ message: 'System settings updated successfully' });
 }));
 
 module.exports = router;

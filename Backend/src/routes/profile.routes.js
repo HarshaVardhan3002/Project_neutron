@@ -369,4 +369,99 @@ router.get('/stats', asyncHandler(async (req, res) => {
     });
 }));
 
+/**
+ * GET /api/profile
+ * Get current user's profile
+ */
+router.get('/', asyncHandler(async (req, res) => {
+    const profile = await prisma.profile.findUnique({
+        where: { id: req.user.id },
+        select: {
+            id: true,
+            displayName: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            role: true,
+            locale: true,
+            timezone: true,
+            bio: true,
+            avatarS3Key: true,
+            country: true,
+            dateOfBirth: true,
+            createdAt: true,
+            updatedAt: true,
+            metadata: true
+        }
+    });
+
+    if (!profile) {
+        throw new AppError('Profile not found', 404);
+    }
+
+    res.json({
+        success: true,
+        data: { profile }
+    });
+}));
+
+/**
+ * PUT /api/profile
+ * Update current user's profile
+ */
+router.put('/', asyncHandler(async (req, res) => {
+    const {
+        displayName,
+        firstName,
+        lastName,
+        phone,
+        locale,
+        timezone,
+        bio,
+        country,
+        dateOfBirth,
+        metadata
+    } = req.body;
+
+    const updatedProfile = await prisma.profile.update({
+        where: { id: req.user.id },
+        data: {
+            displayName,
+            firstName,
+            lastName,
+            phone,
+            locale,
+            timezone,
+            bio,
+            country,
+            dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+            metadata,
+            updatedAt: new Date()
+        },
+        select: {
+            id: true,
+            displayName: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            role: true,
+            locale: true,
+            timezone: true,
+            bio: true,
+            avatarS3Key: true,
+            country: true,
+            dateOfBirth: true,
+            createdAt: true,
+            updatedAt: true,
+            metadata: true
+        }
+    });
+
+    res.json({
+        success: true,
+        message: 'Profile updated successfully',
+        data: { profile: updatedProfile }
+    });
+}));
+
 module.exports = router;

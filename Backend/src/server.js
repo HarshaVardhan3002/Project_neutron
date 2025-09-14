@@ -11,7 +11,6 @@ const rateLimit = require('express-rate-limit');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
-const usersRoutes = require('./routes/users.routes');
 const coursesRoutes = require('./routes/courses.routes');
 const enrollmentsRoutes = require('./routes/enrollments.routes');
 const testsRoutes = require('./routes/tests.routes');
@@ -20,7 +19,6 @@ const profileRoutes = require('./routes/profile.routes');
 const adminRoutes = require('./routes/admin.routes');
 const themesRoutes = require('./routes/themes.routes');
 const websiteContentRoutes = require('./routes/website-content.routes');
-const testBuilderRoutes = require('./routes/test-builder.routes');
 const courseBuilderRoutes = require('./routes/course-builder.routes');
 const userManagementRoutes = require('./routes/user-management.routes');
 const aiRoutes = require('./routes/ai.routes');
@@ -63,7 +61,6 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', usersRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/enrollments', authenticateToken, enrollmentsRoutes);
 app.use('/api/tests', authenticateToken, testsRoutes);
@@ -72,7 +69,6 @@ app.use('/api/profile', authenticateToken, profileRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/themes', themesRoutes);
 app.use('/api/website-content', websiteContentRoutes);
-app.use('/api/test-builder', testBuilderRoutes);
 app.use('/api/course-builder', courseBuilderRoutes);
 app.use('/api/user-management', userManagementRoutes);
 app.use('/api/ai', aiRoutes);

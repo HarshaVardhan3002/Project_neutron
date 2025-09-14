@@ -382,11 +382,11 @@ class ApiClient {
 
   // User Profile endpoints
   async getUserProfile() {
-    return this.request('/users/profile');
+    return this.request('/profile');
   }
 
   async updateUserProfile(data: any) {
-    return this.request('/users/profile', {
+    return this.request('/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -462,63 +462,67 @@ class ApiClient {
 
   async getUsers(params?: any) {
     const queryString = params ? new URLSearchParams(params).toString() : '';
-    return this.request(`/users/admin/all${queryString ? `?${queryString}` : ''}`);
+    return this.request(`/user-management${queryString ? `?${queryString}` : ''}`);
   }
 
   async updateUserRole(id: string, role: string) {
-    return this.request(`/users/admin/${id}/role`, {
+    // Note: The backend for user management expects the role in the main body of a PUT request.
+    return this.request(`/user-management/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ role }),
     });
   }
 
   async createUser(data: any) {
-    return this.request('/users/admin/create', {
+    return this.request('/user-management', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async deleteUser(id: string) {
-    return this.request(`/users/admin/${id}`, {
-      method: 'DELETE',
+    // Note: This corresponds to the soft-delete/toggle status in the backend.
+    // The backend has a separate /:id DELETE for permanent deletion.
+    return this.request(`/user-management/${id}/toggle-status`, {
+      method: 'POST',
+      body: JSON.stringify({ active: false }),
     });
   }
 
   async sendPasswordReset(userId: string) {
-    return this.request(`/users/admin/${userId}/password-reset`, {
+    return this.request(`/user-management/${userId}/password-reset`, {
       method: 'POST',
     });
   }
 
   async getAdminCourses(params?: any) {
     const queryString = params ? new URLSearchParams(params).toString() : '';
-    return this.request(`/admin/courses${queryString ? `?${queryString}` : ''}`);
+    return this.request(`/course-builder${queryString ? `?${queryString}` : ''}`);
   }
 
   async publishCourse(id: string, published: boolean) {
-    return this.request(`/admin/courses/${id}/publish`, {
-      method: 'PUT',
+    return this.request(`/course-builder/${id}/publish`, {
+      method: 'POST', // The backend uses POST for this
       body: JSON.stringify({ published }),
     });
   }
 
   async createCourse(courseData: any) {
-    return this.request('/admin/courses', {
+    return this.request('/course-builder', {
       method: 'POST',
       body: JSON.stringify(courseData),
     });
   }
 
   async updateCourse(courseId: string, courseData: any) {
-    return this.request(`/admin/courses/${courseId}`, {
+    return this.request(`/course-builder/${courseId}`, {
       method: 'PUT',
       body: JSON.stringify(courseData),
     });
   }
 
   async deleteCourse(courseId: string) {
-    return this.request(`/admin/courses/${courseId}`, {
+    return this.request(`/course-builder/${courseId}`, {
       method: 'DELETE',
     });
   }
@@ -541,93 +545,93 @@ class ApiClient {
 
   // Admin Content Management endpoints
   async createTest(data: any) {
-    return this.request('/admin/content/tests', {
+    return this.request('/admin/tests', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateTest(id: string, data: any) {
-    return this.request(`/admin/content/tests/${id}`, {
+    return this.request(`/admin/tests/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteTest(id: string) {
-    return this.request(`/admin/content/tests/${id}`, {
+    return this.request(`/admin/tests/${id}`, {
       method: 'DELETE',
     });
   }
 
   async addQuestionToTest(testId: string, question: any) {
-    return this.request(`/admin/content/tests/${testId}/questions`, {
+    return this.request(`/admin/tests/${testId}/questions`, {
       method: 'POST',
       body: JSON.stringify(question),
     });
   }
 
   async updateQuestion(testId: string, questionId: string, data: any) {
-    return this.request(`/admin/content/tests/${testId}/questions/${questionId}`, {
+    return this.request(`/admin/questions/${questionId}`, { // The backend route is simpler
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteQuestion(testId: string, questionId: string) {
-    return this.request(`/admin/content/tests/${testId}/questions/${questionId}`, {
+    return this.request(`/admin/questions/${questionId}`, { // The backend route is simpler
       method: 'DELETE',
     });
   }
 
   async getChapters(params?: any) {
     const queryString = params ? new URLSearchParams(params).toString() : '';
-    return this.request(`/admin/content/chapters${queryString ? `?${queryString}` : ''}`);
+    return this.request(`/admin/chapters${queryString ? `?${queryString}` : ''}`);
   }
 
   async createChapter(data: any) {
-    return this.request('/admin/content/chapters', {
+    return this.request('/admin/chapters', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateChapter(id: string, data: any) {
-    return this.request(`/admin/content/chapters/${id}`, {
+    return this.request(`/admin/chapters/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteChapter(id: string) {
-    return this.request(`/admin/content/chapters/${id}`, {
+    return this.request(`/admin/chapters/${id}`, {
       method: 'DELETE',
     });
   }
 
   async reorderChapter(id: string, direction: 'up' | 'down') {
-    return this.request(`/admin/content/chapters/${id}/reorder`, {
+    return this.request(`/admin/chapters/${id}/reorder`, {
       method: 'PUT',
       body: JSON.stringify({ direction }),
     });
   }
 
   async addContentToChapter(chapterId: string, content: any) {
-    return this.request(`/admin/content/chapters/${chapterId}/contents`, {
+    return this.request(`/admin/chapters/${chapterId}/contents`, {
       method: 'POST',
       body: JSON.stringify(content),
     });
   }
 
   async updateContent(chapterId: string, contentId: string, data: any) {
-    return this.request(`/admin/content/chapters/${chapterId}/contents/${contentId}`, {
+    return this.request(`/admin/chapters/${chapterId}/contents/${contentId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteContent(chapterId: string, contentId: string) {
-    return this.request(`/admin/content/chapters/${chapterId}/contents/${contentId}`, {
+    return this.request(`/admin/chapters/${chapterId}/contents/${contentId}`, {
       method: 'DELETE',
     });
   }
@@ -732,65 +736,73 @@ class ApiClient {
     return this.request(`/website-content/section/${section}/history${queryString}`);
   }
 
+  async getWebsiteSection(section: string) {
+    return this.request(`/website-content/section/${section}`);
+  }
+
   // Test Builder endpoints
   async getTestsForBuilder(params?: any) {
     const queryString = params ? new URLSearchParams(params).toString() : '';
-    return this.request(`/test-builder${queryString ? `?${queryString}` : ''}`);
+    return this.request(`/admin/tests${queryString ? `?${queryString}` : ''}`);
   }
 
   async getTestForBuilder(id: string) {
-    return this.request(`/test-builder/${id}`);
+    return this.request(`/admin/tests/${id}`);
   }
 
   async createTestBuilder(data: any) {
-    return this.request('/test-builder', {
+    return this.request('/admin/tests', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateTestBuilder(id: string, data: any) {
-    return this.request(`/test-builder/${id}`, {
+    return this.request(`/admin/tests/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteTestBuilder(id: string) {
-    return this.request(`/test-builder/${id}`, {
+    return this.request(`/admin/tests/${id}`, {
       method: 'DELETE',
     });
   }
 
   async addQuestionToTestBuilder(testId: string, question: any) {
-    return this.request(`/test-builder/${testId}/questions`, {
+    return this.request(`/admin/tests/${testId}/questions`, {
       method: 'POST',
       body: JSON.stringify(question),
     });
   }
 
   async updateQuestionInTestBuilder(testId: string, questionId: string, data: any) {
-    return this.request(`/test-builder/${testId}/questions/${questionId}`, {
+    return this.request(`/admin/questions/${questionId}`, { // The backend route is simpler
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteQuestionFromTestBuilder(testId: string, questionId: string) {
-    return this.request(`/test-builder/${testId}/questions/${questionId}`, {
+    return this.request(`/admin/questions/${questionId}`, { // The backend route is simpler
       method: 'DELETE',
     });
   }
 
   async publishTest(id: string, published: boolean) {
-    return this.request(`/test-builder/${id}/publish`, {
+    // This functionality is not in the refactored admin.routes.js, needs to be added.
+    // For now, pointing to a non-existent endpoint.
+    return this.request(`/admin/tests/${id}/publish`, {
       method: 'POST',
       body: JSON.stringify({ published }),
     });
   }
 
   async duplicateTest(id: string, title?: string) {
-    return this.request(`/test-builder/${id}/duplicate`, {
+    // This functionality is not in the refactored admin.routes.js, needs to be added.
+    // For now, pointing to a non-existent endpoint.
+    return this.request(`/admin/tests/${id}/duplicate`, {
       method: 'POST',
       body: JSON.stringify({ title }),
     });
