@@ -42,7 +42,6 @@ router.post('/signup', asyncHandler(async (req, res) => {
         const profile = await prisma.profiles.create({
             data: {
                 id: authData.user.id,
-                email,
                 display_name: displayName || null,
                 phone: phone || null,
                 role: 'student',
@@ -51,7 +50,6 @@ router.post('/signup', asyncHandler(async (req, res) => {
             },
             select: {
                 id: true,
-                email: true,
                 display_name: true,
                 role: true,
                 created_at: true
