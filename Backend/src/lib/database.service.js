@@ -11,12 +11,13 @@ const prisma = new PrismaClient({
 });
 
 // Handle graceful shutdown
-process.on('beforeExit', async () => {
+process.on('SIGINT', async () => {
     console.log('🔌 Disconnecting from database...');
     await prisma.$disconnect();
+    process.exit(0);
 });
 
-process.on('SIGINT', async () => {
+process.on('SIGTERM', async () => {
     console.log('🔌 Disconnecting from database...');
     await prisma.$disconnect();
     process.exit(0);

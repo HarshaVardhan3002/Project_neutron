@@ -27,7 +27,8 @@ import {
     Tablet,
     Check,
     X,
-    AlertCircle
+    AlertCircle,
+    Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -151,7 +152,7 @@ function WebsiteContentManagementContent() {
                 return;
             }
 
-            setContentSections(response.data?.content || []);
+            setContentSections((response.data as { content: any[] })?.content || []);
         } catch (error) {
             console.error('Error loading content:', error);
             toast.error('Failed to load website content');
@@ -234,7 +235,7 @@ function WebsiteContentManagementContent() {
                 return;
             }
 
-            setHistory(response.data?.history || []);
+            setHistory((response.data as { history: any[] })?.history || []);
             setShowHistory(true);
         } catch (error) {
             console.error('Error loading history:', error);
@@ -479,8 +480,8 @@ function WebsiteContentManagementContent() {
                                     <div
                                         key={section.section}
                                         className={`p-3 border rounded-lg cursor-pointer transition-all ${selectedSection === section.section
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-border hover:border-primary/50'
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:border-primary/50'
                                             }`}
                                         onClick={() => setSelectedSection(section.section)}
                                     >

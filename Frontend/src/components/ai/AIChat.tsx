@@ -90,7 +90,7 @@ export default function AIChat({ context = {}, className = '' }: AIChatProps) {
                 return;
             }
 
-            setSessions(response.data?.sessions || []);
+            setSessions((response.data as { sessions: any[] })?.sessions || []);
         } catch (error) {
             console.error('Error loading sessions:', error);
             toast.error('Failed to load chat sessions');
@@ -108,7 +108,7 @@ export default function AIChat({ context = {}, className = '' }: AIChatProps) {
                 return;
             }
 
-            setMessages(response.data?.messages || []);
+            setMessages((response.data as { messages: any[] })?.messages || []);
             setCurrentSessionId(sessionId);
         } catch (error) {
             console.error('Error loading messages:', error);
@@ -145,16 +145,20 @@ export default function AIChat({ context = {}, className = '' }: AIChatProps) {
 
             // Update session ID if this was a new session
             if (!currentSessionId) {
-                setCurrentSessionId(response.data.sessionId);
-                await loadSessions(); // Refresh sessions list
+                const sessionId = (response.data as { sessionId: string })?.sessionId;
+                if (sessionId) {
+                    setCurrentSessionId(sessionId);
+                    await loadSessions(); // Refresh sessions list
+                }
             }
 
             // Add AI response
+            const responseData = response.data as { message: string; tokensUsed?: number };
             const aiMessage: ChatMessage = {
                 id: `ai-${Date.now()}`,
                 role: 'assistant',
-                content: response.data.message,
-                tokens_used: response.data.tokensUsed,
+                content: responseData.message,
+                tokens_used: responseData.tokensUsed,
                 model_used: 'gemini-pro',
                 created_at: new Date().toISOString()
             };

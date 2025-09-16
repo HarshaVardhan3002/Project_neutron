@@ -25,9 +25,8 @@ import Link from 'next/link';
 export default function LmsDashboardPage() {
   const { user, profile } = useAuth();
   const { data: dashboardData, loading: dashboardLoading } = useDashboard();
-  const { enrollments, loading: enrollmentsLoading } = useEnrollments();
 
-  if (dashboardLoading || enrollmentsLoading) {
+  if (dashboardLoading) {
     return (
       <div className="space-y-8">
         <div className="animate-pulse">
@@ -48,14 +47,15 @@ export default function LmsDashboardPage() {
     );
   }
 
-  const activeEnrollments = enrollments?.filter(e => e.status === 'active') || [];
+  const enrollments = dashboardData?.enrollments || [];
+  const activeEnrollments = enrollments.filter(e => e.status === 'active') || [];
   const hasEnrollments = activeEnrollments.length > 0;
 
   return (
     <div className="space-y-8">
       <AnimatedDiv>
         <PageHeader
-          title={`Welcome back, ${profile?.displayName || 'Learner'}!`}
+          title={`Welcome back, ${profile?.display_name || 'Learner'}!`}
           description={hasEnrollments
             ? "Continue your learning journey and achieve your goals."
             : "Ready to start your learning journey? Choose a course to begin."

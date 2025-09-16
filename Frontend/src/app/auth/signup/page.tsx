@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 
 export default function SignUpPage() {
     const router = useRouter();
-    const { signUp, signInWithGoogle } = useAuth();
+    const { signUp, signInWithGoogle, updateProfile } = useAuth();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -36,6 +36,7 @@ export default function SignUpPage() {
         confirmPassword: '',
         firstName: '',
         lastName: '',
+        role: 'student',
         agreeToTerms: false
     });
     const [showPassword, setShowPassword] = useState(false);
@@ -66,18 +67,27 @@ export default function SignUpPage() {
         setLoading(true);
 
         try {
-            const { error } = await signUp(
+            // First, sign up with basic info
+            const { error: signUpError } = await signUp(
                 formData.email,
                 formData.password,
-                {
-                    display_name: `${formData.firstName} ${formData.lastName}`,
-                    first_name: formData.firstName,
-                    last_name: formData.lastName
-                }
+                `${formData.firstName} ${formData.lastName}`
             );
 
-            if (error) {
-                setError(error.message);
+            if (signUpError) {
+                setError(signUpError.message);
+                return;
+            }
+
+            // Then update profile with additional data
+            const { error: profileError } = await updateProfile({
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                role: formData.role as 'student' | 'instructor' | 'admin'
+            });
+
+            if (profileError) {
+                setError(profileError.message);
             } else {
                 toast.success('Account created successfully! Please check your email to verify your account.');
                 router.push('/auth/signin');
@@ -234,6 +244,20 @@ export default function SignUpPage() {
                                                 required
                                             />
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="role">I want to join as</Label>
+                                        <select
+                                            id="role"
+                                            value={formData.role}
+                                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                            className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                            required
+                                        >
+                                            <option value="student">Student - Learn new skills</option>
+                                            <option value="instructor">Instructor - Teach and share knowledge</option>
+                                        </select>
                                     </div>
 
                                     <div className="space-y-2">

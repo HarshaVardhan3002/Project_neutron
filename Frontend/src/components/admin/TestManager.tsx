@@ -110,7 +110,7 @@ export function TestManager({ searchQuery }: TestManagerProps) {
             if (response.error) {
                 throw new Error(response.error);
             }
-            setTests(response.data?.tests || []);
+            setTests((response.data as { tests: any[] })?.tests || []);
         } catch (error) {
             console.error('Error fetching tests:', error);
             toast.error('Failed to load tests');

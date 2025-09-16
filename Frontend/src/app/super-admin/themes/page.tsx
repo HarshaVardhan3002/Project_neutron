@@ -109,7 +109,7 @@ function ThemeManagementContent() {
                 return;
             }
 
-            const themesData = response.data?.themes || [];
+            const themesData = (response.data as { themes: any[] })?.themes || [];
             setThemes(themesData);
 
             // Set active theme as selected, or first theme if none active
@@ -162,14 +162,15 @@ function ThemeManagementContent() {
             toast.success('Theme updated successfully');
 
             // Update local state
+            const updatedTheme = (response.data as { theme: any })?.theme;
             setThemes(prev => prev.map(theme =>
                 theme.id === themeId
-                    ? { ...theme, ...response.data?.theme }
+                    ? { ...theme, ...updatedTheme }
                     : theme
             ));
 
             if (selectedTheme?.id === themeId) {
-                setSelectedTheme(prev => prev ? { ...prev, ...response.data?.theme } : null);
+                setSelectedTheme(prev => prev ? { ...prev, ...updatedTheme } : null);
             }
         } catch (error) {
             console.error('Error updating theme:', error);
@@ -309,8 +310,8 @@ function ThemeManagementContent() {
                                     <div
                                         key={theme.id}
                                         className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedTheme?.id === theme.id
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-border hover:border-primary/50'
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:border-primary/50'
                                             }`}
                                         onClick={() => setSelectedTheme(theme)}
                                     >

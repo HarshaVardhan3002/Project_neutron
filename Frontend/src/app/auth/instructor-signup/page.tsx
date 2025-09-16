@@ -33,7 +33,7 @@ import { toast } from 'sonner';
 
 export default function InstructorSignUpPage() {
     const router = useRouter();
-    const { signUp } = useAuth();
+    const { signUp, updateProfile } = useAuth();
 
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
@@ -117,17 +117,28 @@ export default function InstructorSignUpPage() {
         setLoading(true);
 
         try {
-            const { error } = await signUp(
+            // First, sign up with basic info
+            const { error: signUpError } = await signUp(
                 formData.email,
                 formData.password,
-                {
-                    display_name: `${formData.firstName} ${formData.lastName}`,
-                    first_name: formData.firstName,
-                    last_name: formData.lastName,
-                    role: 'instructor',
+                `${formData.firstName} ${formData.lastName}`
+            );
+
+            if (signUpError) {
+                setError(signUpError.message);
+                return;
+            }
+
+            // Then update profile with instructor-specific data
+            const { error: profileError } = await updateProfile({
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                role: 'instructor',
+                phone: formData.phone,
+                bio: formData.bio,
+                metadata: {
                     instructor_profile: {
                         title: formData.title,
-                        bio: formData.bio,
                         expertise: formData.expertise,
                         experience: formData.experience,
                         education: formData.education,
@@ -135,14 +146,13 @@ export default function InstructorSignUpPage() {
                         subjects: formData.subjects,
                         teaching_experience: formData.teachingExperience,
                         preferred_schedule: formData.preferredSchedule,
-                        hourly_rate: parseFloat(formData.hourlyRate) || 0,
-                        phone: formData.phone
+                        hourly_rate: parseFloat(formData.hourlyRate) || 0
                     }
                 }
-            );
+            });
 
-            if (error) {
-                setError(error.message);
+            if (profileError) {
+                setError(profileError.message);
             } else {
                 toast.success('Instructor application submitted successfully! Please check your email and wait for approval.');
                 router.push('/auth/signin');
@@ -196,8 +206,8 @@ export default function InstructorSignUpPage() {
                             {[1, 2, 3].map((stepNumber) => (
                                 <div key={stepNumber} className="flex items-center">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNumber
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-600'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-200 text-gray-600'
                                         }`}>
                                         {stepNumber}
                                     </div>

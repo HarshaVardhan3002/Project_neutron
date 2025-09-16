@@ -60,7 +60,7 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    let lastError: Error;
+    let lastError: Error | undefined;
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -133,7 +133,22 @@ class ApiClient {
       throw lastError;
     }
 
-    // Handle network errors
+    // Handle network errors or unexpected cases
+    if (!lastError) {
+      throw new AppError(
+        'Unknown error occurred',
+        'unknown',
+        'medium',
+        {
+          component: 'api_client',
+          action: `${fetchOptions.method || 'GET'} ${endpoint}`,
+          additionalData: { url }
+        },
+        'An unexpected error occurred. Please try again.',
+        true
+      );
+    }
+
     const errorType: ErrorType = lastError.name === 'AbortError' ? 'network' : 'network';
     const errorMessage = lastError.name === 'AbortError' 
       ? 'Request timeout' 
@@ -371,10 +386,6 @@ class ApiClient {
     return this.request(`/tests/${testId}/attempts`);
   }
 
-  async getTestResults(testId: string, attemptId: string) {
-    return this.request(`/tests/${testId}/attempts/${attemptId}/results`);
-  }
-
   async getMyTestAttempts(params?: any) {
     const queryString = params ? new URLSearchParams(params).toString() : '';
     return this.request(`/tests/my-attempts${queryString ? `?${queryString}` : ''}`);
@@ -460,6 +471,10 @@ class ApiClient {
     return this.request('/admin/dashboard');
   }
 
+  async getAdminContentOverview() {
+    return this.request('/admin/content-overview');
+  }
+
   async getUsers(params?: any) {
     const queryString = params ? new URLSearchParams(params).toString() : '';
     return this.request(`/user-management${queryString ? `?${queryString}` : ''}`);
@@ -507,21 +522,21 @@ class ApiClient {
     });
   }
 
-  async createCourse(courseData: any) {
+  async createAdminCourse(courseData: any) {
     return this.request('/course-builder', {
       method: 'POST',
       body: JSON.stringify(courseData),
     });
   }
 
-  async updateCourse(courseId: string, courseData: any) {
+  async updateAdminCourse(courseId: string, courseData: any) {
     return this.request(`/course-builder/${courseId}`, {
       method: 'PUT',
       body: JSON.stringify(courseData),
     });
   }
 
-  async deleteCourse(courseId: string) {
+  async deleteAdminCourse(courseId: string) {
     return this.request(`/course-builder/${courseId}`, {
       method: 'DELETE',
     });
@@ -636,7 +651,7 @@ class ApiClient {
     });
   }
 
-  async sendPasswordReset(userId: string) {
+  async sendAdminPasswordReset(userId: string) {
     return this.request(`/users/admin/${userId}/password-reset`, {
       method: 'POST',
     });

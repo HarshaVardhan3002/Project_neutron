@@ -278,7 +278,9 @@ export function useApiCall<T = any>(options: UseErrorHandlerOptions & {
     }, [errorHandler, onSuccess, onError, retryOn]);
 
     const retry = useCallback((apiCall: () => Promise<T>, customContext?: ErrorContext) => {
-        errorHandler.retry(() => call(apiCall, customContext));
+        errorHandler.retry(async () => {
+            await call(apiCall, customContext);
+        });
     }, [errorHandler, call]);
 
     return {

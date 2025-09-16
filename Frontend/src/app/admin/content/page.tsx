@@ -27,6 +27,7 @@ import { apiClient } from '@/lib/api.service';
 import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 interface AdminStats {
     totalUsers: number;
@@ -39,7 +40,14 @@ interface AdminStats {
     revenueGrowth: number;
 }
 
-export default function AdminContentPage() {
+interface AdminContentOverview {
+    totalCourses: number;
+    totalTests: number;
+    totalUsers: number;
+    totalEnrollments: number;
+}
+
+function AdminContentPageContent() {
     const searchParams = useSearchParams();
     const defaultTab = searchParams.get('tab') || 'users';
 
@@ -54,14 +62,20 @@ export default function AdminContentPage() {
     const fetchAdminStats = async () => {
         try {
             setStatsLoading(true);
-            const response = await apiClient.getAdminDashboard();
+            const response = await apiClient.getAdminContentOverview();
             if (response.error) {
                 throw new Error(response.error);
             }
-            setStats(response.data?.stats || {
-                totalUsers: 0,
-                activeCourses: 0,
+            const overview = (response.data as { overview: AdminContentOverview })?.overview || {
+                totalCourses: 0,
                 totalTests: 0,
+                totalUsers: 0,
+                totalEnrollments: 0
+            };
+            setStats({
+                totalUsers: overview.totalUsers || 0,
+                activeCourses: overview.totalCourses || 0,
+                totalTests: overview.totalTests || 0,
                 revenue: 0,
                 userGrowth: 0,
                 courseGrowth: 0,
@@ -295,5 +309,13 @@ export default function AdminContentPage() {
                 </Tabs>
             </div>
         </ProtectedRoute>
+    );
+}
+
+export default function AdminContentPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AdminContentPageContent />
+        </Suspense>
     );
 }

@@ -97,9 +97,9 @@ function TestsContent() {
 
         let matchesStatus = true;
         if (filterStatus === 'completed') {
-            matchesStatus = test.userAttempts && test.userAttempts.length > 0;
+            matchesStatus = Boolean(test.userAttempts && test.userAttempts.length > 0);
         } else if (filterStatus === 'passed') {
-            matchesStatus = test.userAttempts && test.userAttempts.some(attempt => attempt.passed);
+            matchesStatus = Boolean(test.userAttempts && test.userAttempts.some(attempt => attempt.passed));
         } else if (filterStatus === 'available') {
             matchesStatus = !test.userAttempts || test.userAttempts.length === 0;
         }

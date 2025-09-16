@@ -296,9 +296,46 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
+  const { profile, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect based on user role
+  useEffect(() => {
+    if (!loading && profile) {
+      const role = profile.role;
+
+      if (role === 'admin' || role === 'super_admin') {
+        window.location.href = '/admin';
+        return;
+      } else if (role === 'instructor') {
+        window.location.href = '/instructor/dashboard';
+        return;
+      } else {
+        // Student role - show LMS dashboard
+        window.location.href = '/lms/dashboard';
+        return;
+      }
+    }
+  }, [profile, loading]);
+
   return (
     <ProtectedRoute>
-      <DashboardContent />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground">Redirecting to your dashboard...</p>
+        </div>
+      </div>
     </ProtectedRoute>
   );
 }

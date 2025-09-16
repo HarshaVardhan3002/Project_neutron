@@ -116,7 +116,7 @@ export function CourseManager({ searchQuery }: CourseManagerProps) {
             if (response.error) {
                 throw new Error(response.error);
             }
-            setCourses(response.data?.courses || []);
+            setCourses((response.data as { courses: any[] })?.courses || []);
         } catch (error) {
             console.error('Error fetching courses:', error);
             toast.error('Failed to load courses');

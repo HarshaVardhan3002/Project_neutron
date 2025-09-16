@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @fileoverview The "Testimonials" section for the homepage.
  * It displays quotes from satisfied students or clients, fetched from the backend.
@@ -34,8 +36,9 @@ export default function TestimonialsSection() {
         const response = await apiClient.getWebsiteSection('testimonials');
 
         // The API returns the whole section object. The actual testimonials are in the 'content' property.
-        if (response.data && response.data.content) {
-          setTestimonials(response.data.content);
+        const responseData = response.data as { content?: any[] };
+        if (responseData && responseData.content) {
+          setTestimonials(responseData.content);
         } else {
           // If no content is found, set to empty array to avoid errors
           setTestimonials([]);

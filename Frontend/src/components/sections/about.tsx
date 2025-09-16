@@ -7,7 +7,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Rocket, Lightbulb, Handshake, Target, CreditCard, Icon as LucideIcon } from 'lucide-react';
+import { Rocket, Lightbulb, Handshake, Target, CreditCard } from 'lucide-react';
+import { LucideProps } from 'lucide-react';
 import { cn } from '@/lib/utils.helper';
 import { AnimatedDiv } from '../AnimatedDiv';
 import { apiClient } from '@/lib/api.service';
@@ -36,7 +37,7 @@ interface AboutSectionData {
 
 // --- Icon Mapping ---
 
-const iconMap: { [key: string]: LucideIcon } = {
+const iconMap: { [key: string]: React.ComponentType<LucideProps> } = {
   Handshake,
   Lightbulb,
   Rocket,
@@ -94,8 +95,9 @@ export default function AboutUsSection() {
       try {
         setIsLoading(true);
         const response = await apiClient.getWebsiteSection('about');
-        if (response.data && response.data.content) {
-          setData(response.data.content);
+        const responseData = response.data as { content?: any };
+        if (responseData && responseData.content) {
+          setData(responseData.content);
         } else {
           // If no content is found from the API, we'll just use the default data
           console.warn("No 'about' section content found in API response. Using default data.");
@@ -155,14 +157,22 @@ export default function AboutUsSection() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <AnimatedDiv>
-            <h2 className="font-headline text-4xl md:text-5xl font-bold animated-gradient-text mb-4 pb-2">
-              {isLoading ? <Skeleton className="h-12 w-3/4 mx-auto" /> : data.title}
-            </h2>
+            {isLoading ? (
+              <Skeleton className="h-12 w-3/4 mx-auto mb-4" />
+            ) : (
+              <h2 className="font-headline text-4xl md:text-5xl font-bold animated-gradient-text mb-4 pb-2">
+                {data.title}
+              </h2>
+            )}
           </AnimatedDiv>
           <AnimatedDiv delay={100}>
-            <p className="text-lg sm:text-xl text-foreground/80 font-medium">
-              {isLoading ? <Skeleton className="h-6 w-1/2 mx-auto" /> : data.subtitle}
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-6 w-1/2 mx-auto" />
+            ) : (
+              <p className="text-lg sm:text-xl text-foreground/80 font-medium">
+                {data.subtitle}
+              </p>
+            )}
           </AnimatedDiv>
         </div>
 
